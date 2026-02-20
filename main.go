@@ -7,10 +7,17 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/skiba-mateusz/PassVault/db"
 	"golang.org/x/crypto/argon2"
 )
 
 func main() {
+	db, err := db.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
 	fmt.Println("PassVault")
 
 	password := "password"
