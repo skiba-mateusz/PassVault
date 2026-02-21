@@ -5,8 +5,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"os"
-	"os/signal"
 
 	"github.com/skiba-mateusz/PassVault/store"
 	"golang.org/x/crypto/argon2"
@@ -32,9 +30,6 @@ func NewVault(store *store.Store) *Vault {
 }
 
 func (v *Vault) IsSetup(ctx context.Context) bool {
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
-	defer cancel()
-
 	_, _, _, err := v.store.Config.Get(ctx)
 	
 	return err == nil
