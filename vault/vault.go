@@ -1,11 +1,14 @@
 package vault
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"fmt"
+	"os"
+	"os/signal"
 
+	"github.com/skiba-mateusz/PassVault/store"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -17,16 +20,27 @@ const (
 )
 
 type Vault struct {
+	store *store.Store
 	dek []byte
 }
 
-func NewVault() *Vault {
+func NewVault(store *store.Store) *Vault {
 	return &Vault{
+		store: store,
 		dek: nil,
 	}
 }
 
-func (v *Vault) Setup(password string) error {
+func (v *Vault) IsSetup(ctx context.Context) bool {
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
+	_, _, _, err := v.store.Config.Get(ctx)
+	
+	return err == nil
+}
+
+func (v *Vault) Setup(ctx context.Context,password string) error {
 	salt := make([]byte, keyLength)
 	if _, err := rand.Read(salt); err != nil {
 		return err
@@ -39,43 +53,59 @@ func (v *Vault) Setup(password string) error {
 		return err
 	}
 
-	encryptedDek, err := v.encrypt(dek, masterKey)
+	encryptedDek, nonce, err := v.encrypt(dek, masterKey)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(encryptedDek)
+	if err = v.store.Config.Save(ctx, salt, encryptedDek, nonce); err != nil {
+		return err
+	}
+
+	v.dek = []byte(dek)
 
 	return nil
 }
 
-func (v *Vault) Unlock(password string) error {
+func (v *Vault) Unlock(ctx context.Context, password string) error {
 	_ = v.derieveKey([]byte(password), nil)
 
-	// implement after fetching config from db
+	salt, dek, nonce, err := v.store.Config.Get(ctx)
+	if err != nil {
+		return err
+	}
 
+	masterKey := v.derieveKey([]byte(password), salt)
+
+	decryptedDek, err := v.decrypt(dek, nonce, masterKey)
+	if err != nil {
+		return err
+	}
+
+	v.dek = []byte(decryptedDek)
+	
 	return nil
 }
 
-func (v *Vault) encrypt(plaintext, key []byte) ([]byte, error) {
+func (v *Vault) encrypt(plaintext, key []byte) ([]byte, []byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ciphertext := gcm.Seal(nil, nonce, plaintext, nil)
 
-	return ciphertext, nil
+	return ciphertext, nonce, nil
 }
 
 func (v *Vault) decrypt(ciphertext, nonce, key []byte) (string, error) {
