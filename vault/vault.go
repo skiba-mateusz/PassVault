@@ -46,7 +46,7 @@ func (v *Vault) Setup(ctx context.Context,password string) error {
 		return err
 	}
 
-	masterKey := v.derieveKey([]byte(password), salt)
+	masterKey := v.deriveKey([]byte(password), salt)
 
 	dek := make([]byte, keyLength)
 	if _, err := rand.Read(dek); err != nil {
@@ -68,14 +68,14 @@ func (v *Vault) Setup(ctx context.Context,password string) error {
 }
 
 func (v *Vault) Unlock(ctx context.Context, password string) error {
-	_ = v.derieveKey([]byte(password), nil)
+	_ = v.deriveKey([]byte(password), nil)
 
 	salt, dek, nonce, err := v.store.Config.Get(ctx)
 	if err != nil {
 		return err
 	}
 
-	masterKey := v.derieveKey([]byte(password), salt)
+	masterKey := v.deriveKey([]byte(password), salt)
 
 	decryptedDek, err := v.decrypt(dek, nonce, masterKey)
 	if err != nil {
@@ -127,6 +127,6 @@ func (v *Vault) decrypt(ciphertext, nonce, key []byte) (string, error) {
 	return string(plaintext), nil
 }
 
-func (v *Vault) derieveKey(password, salt []byte) []byte {
+func (v *Vault) deriveKey(password, salt []byte) []byte {
 	return argon2.IDKey(password, salt, time, memory, threads, keyLength)
 }
