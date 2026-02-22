@@ -63,8 +63,6 @@ func (v *Vault) Setup(ctx context.Context,password string) error {
 }
 
 func (v *Vault) Unlock(ctx context.Context, password string) error {
-	_ = v.deriveKey([]byte(password), nil)
-
 	salt, dek, nonce, err := v.store.Config.Get(ctx)
 	if err != nil {
 		return err
@@ -78,7 +76,7 @@ func (v *Vault) Unlock(ctx context.Context, password string) error {
 	}
 
 	v.dek = []byte(decryptedDek)
-	
+
 	return nil
 }
 
@@ -116,7 +114,7 @@ func (v *Vault) decrypt(ciphertext, nonce, key []byte) (string, error) {
 
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return string(plaintext), nil
