@@ -6,8 +6,10 @@ import (
 	"os"
 	"os/signal"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/skiba-mateusz/PassVault/db"
 	"github.com/skiba-mateusz/PassVault/store"
+	"github.com/skiba-mateusz/PassVault/ui"
 	"github.com/skiba-mateusz/PassVault/vault"
 )
 
@@ -23,10 +25,9 @@ func main() {
 
 	store := store.NewStore(db)
 	vault := vault.NewVault(store)
-	
-	if vault.IsSetup(ctx) {
-		vault.Unlock(ctx, "password")
-	}
 
-	vault.Setup(ctx, "password")
+	program := tea.NewProgram(ui.NewModel(ctx, vault))
+	if _, err := program.Run(); err != nil {
+		log.Fatal(err)
+	}
 }

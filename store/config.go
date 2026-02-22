@@ -31,17 +31,17 @@ func (s *ConfigStore) Get(ctx context.Context) ([]byte, []byte, []byte, error) {
 	return salt, dek, nonce, nil
 }
 
-func (s *ConfigStore) Save(ctx context.Context, salt, dek, nonce []byte) (error) {
+func (s *ConfigStore) Save(ctx context.Context, username string, salt, dek, nonce []byte) (error) {
 	query := `
 		INSERT INTO vault_config 
-			(argon_salt, encrypted_dek, dek_nonce) 
-		VALUES (?, ?, ?)
+			(username, argon_salt, encrypted_dek, dek_nonce) 
+		VALUES (?, ?, ?, ?)
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, 15 * time.Second)
 	defer cancel()
 
-	if _, err := s.db.ExecContext(ctx, query, salt, dek, nonce); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, username, salt, dek, nonce); err != nil {
 		return err
 	}
 

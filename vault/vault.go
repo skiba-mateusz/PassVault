@@ -35,7 +35,7 @@ func (v *Vault) IsSetup(ctx context.Context) bool {
 	return err == nil
 }
 
-func (v *Vault) Setup(ctx context.Context,password string) error {
+func (v *Vault) Setup(ctx context.Context, username, password string) error {
 	salt := make([]byte, keyLength)
 	if _, err := rand.Read(salt); err != nil {
 		return err
@@ -53,7 +53,7 @@ func (v *Vault) Setup(ctx context.Context,password string) error {
 		return err
 	}
 
-	if err = v.store.Config.Save(ctx, salt, encryptedDek, nonce); err != nil {
+	if err = v.store.Config.Save(ctx, username, salt, encryptedDek, nonce); err != nil {
 		return err
 	}
 

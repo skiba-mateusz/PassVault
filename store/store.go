@@ -8,7 +8,7 @@ import (
 type Store struct {
 	Config interface {
 		Get(ctx context.Context) ([]byte, []byte, []byte, error)
-		Save(ctx context.Context, salt, dek, nonce []byte) error
+		Save(ctx context.Context, username string, salt, dek, nonce []byte) error
 	}
 }
 

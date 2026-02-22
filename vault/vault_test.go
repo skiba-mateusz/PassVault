@@ -11,9 +11,10 @@ func TestSetupVault(t *testing.T) {
 	vault := NewVault(store)
 
 	ctx := t.Context()
+	username := "tester"
 	password := "123456"
 
-	if err := vault.Setup(ctx, password); err != nil {
+	if err := vault.Setup(ctx, username, password); err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
 
@@ -27,9 +28,10 @@ func TestUnlockVault(t *testing.T) {
 	vault := NewVault(store)
 	
 	ctx := t.Context()
+	username := "tester"
 	password := "123456"
 
-	if err := vault.Setup(ctx, password); err != nil {
+	if err := vault.Setup(ctx, username, password); err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
 
