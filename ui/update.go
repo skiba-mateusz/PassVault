@@ -139,17 +139,28 @@ func (m Model) loginUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	hasRows := len(m.table.Rows()) > 0
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEnter {
+			if !hasRows {
+				return m, nil
+			}
+
 			pass := m.table.SelectedRow()[2]
 			clipboard.WriteAll(pass)
 			m.message = fmt.Sprintf("%s copied to clipboard", pass)
 			return m, nil
 		} else if msg.Type == tea.KeyCtrlN {
 			m.message = ""
+			m.err = nil
 			m.view = addServiceView
 			return m, textinput.Blink
+		}
+
+		if !hasRows && (msg.Type == tea.KeyUp || msg.Type == tea.KeyDown) {
+			return m, nil
 		}
 	}
 
@@ -164,6 +175,11 @@ func (m Model) addServiceUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEnter {
 			service := m.editor.Value()
+			if service == "" {
+				m.err = fmt.Errorf("Service name cannot be empty")
+				return m, nil
+			}
+			m.err = nil
 			m.editor.Reset()
 			return m, m.addService(service)
 		}
