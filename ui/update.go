@@ -182,7 +182,7 @@ func (m Model) dashboard() (tea.Cmd) {
 		rowPasswords := []table.Row{}
 		for i, pass := range passwords {
 			row := []string{
-				fmt.Sprintf("%d", i),
+				fmt.Sprintf("%d", i + 1),
 				pass.Service,
 				pass.Password,
 			}
