@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -16,7 +18,12 @@ type DashboardSuccessmsg struct { Passwords []table.Row }
 type AddServiceSuccessMsg struct { }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		m.loader, cmd = m.loader.Update(msg)
+		return m, cmd
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEsc {
 			return m, tea.Quit
@@ -26,23 +33,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case FailedMsg:
 		m.err = msg.Err
+		m.isLoading = false
 		return m, nil
 	case LoginSuccessMsg:
 		m.view = dashboardView
 		m.username = msg.Username
-		return m, nil
+		m.isLoading = true
+		return m, m.dashboard()
 	case RegisterSuccessMsg:
 		m.view = dashboardView
 		m.username = msg.Username
-		return m, nil
+		m.isLoading = true
+		return m, m.dashboard()
 	case DashboardSuccessmsg:
 		rows := msg.Passwords
 		m.table.SetHeight(len(rows) + 1)
 		m.table.SetRows(rows)
+		m.isLoading = false
 		return m, nil
 	case AddServiceSuccessMsg:
 		m.table.SetHeight(m.table.Height() + 1)
 		m.view = dashboardView
+		m.isLoading	= true
+		return m, m.dashboard()
+	}
+
+	if m.isLoading {
 		return m, nil
 	}
 
@@ -119,7 +135,8 @@ func (m Model) loginUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.loginInput, cmd = m.loginInput.Update(msg)
 
-	return m, cmd}
+	return m, cmd
+}
 
 func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -130,14 +147,16 @@ func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.message = fmt.Sprintf("%s copied to clipboard", pass)
 			return m, nil
 		} else if msg.Type == tea.KeyCtrlN {
+			m.message = ""
 			m.view = addServiceView
-			return m, nil
+			return m, textinput.Blink
 		}
 	}
 
-	m.table, _ = m.table.Update(msg)
-
-	return m, m.dashboard()
+	var cmd tea.Cmd
+	m.table, cmd = m.table.Update(msg)
+	
+	return m, cmd
 }
 
 func (m Model) addServiceUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -179,6 +198,10 @@ func (m Model) dashboard() (tea.Cmd) {
 		passwords ,err := m.vault.List(m.ctx)
 		if err != nil {
 			return FailedMsg{Err: err}
+		}
+
+		if len(passwords) == 0 {
+			return FailedMsg{Err: fmt.Errorf("Nothing to display, try adding service")}
 		}
 
 		rowPasswords := []table.Row{}

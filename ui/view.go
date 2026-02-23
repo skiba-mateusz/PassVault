@@ -42,6 +42,10 @@ func (m Model) View() string {
 	result := fmt.Sprintf("%s\n\n", headerStyle.Render(fmt.Sprintf("PassVault - Your Personal Password Manager | %s", m.username)))
 	footer := "esc - quit"
 
+	if m.isLoading {
+		return fmt.Sprintf("%s%s loading...\n\n%s",result, m.loader.View(), footer)
+	}
+
 	switch m.view {
 	case registerView:
 		result += m.registerView()

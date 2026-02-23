@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,9 +16,11 @@ type Model struct {
 	editor textinput.Model
 	loginInput textinput.Model
 	table table.Model
+	loader spinner.Model
 	form []textinput.Model
 	formIndex int
 	view view
+	isLoading bool
 	message string
 	username string
 	err error
@@ -46,6 +49,9 @@ func NewModel(ctx context.Context, vault *vault.Vault) Model {
 		table.WithFocused(true),
 		table.WithHeight(0),
 	)
+
+	loader := spinner.New()
+	loader.Spinner = spinner.Dot
 
 	var formInput textinput.Model
 	form := make([]textinput.Model, 2)
@@ -79,7 +85,9 @@ func NewModel(ctx context.Context, vault *vault.Vault) Model {
 		loginInput: loginInput,
 		form: form,
 		table: table,
+		loader: loader,
 		formIndex: 0,
+		isLoading: false,	
 		username: "",
 		message: "",
 		err: nil,
@@ -87,5 +95,5 @@ func NewModel(ctx context.Context, vault *vault.Vault) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.ClearScreen
+	return tea.Batch(tea.ClearScreen, m.loader.Tick, textinput.Blink)
 }
