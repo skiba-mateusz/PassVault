@@ -13,8 +13,8 @@ func NewMockStore() *Store {
 	}
 }
 
-func (s *MockConfigStore) Get(ctx context.Context) ([]byte, []byte, []byte, error) {
-	return s.salt, s.dek, s.nonce, nil
+func (s *MockConfigStore) Get(ctx context.Context) (string, []byte, []byte, []byte, error) {
+	return s.username, s.salt, s.dek, s.nonce, nil
 }
 
 func (s *MockConfigStore) Save(ctx context.Context, username string, salt, dek, nonce []byte) error {

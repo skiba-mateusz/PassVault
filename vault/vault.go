@@ -19,6 +19,7 @@ const (
 
 type Vault struct {
 	store *store.Store
+	username string
 	dek []byte
 }
 
@@ -30,7 +31,7 @@ func NewVault(store *store.Store) *Vault {
 }
 
 func (v *Vault) IsSetup(ctx context.Context) bool {
-	_, _, _, err := v.store.Config.Get(ctx)
+	_, _, _, _, err := v.store.Config.Get(ctx)
 	
 	return err == nil
 }
@@ -63,7 +64,7 @@ func (v *Vault) Setup(ctx context.Context, username, password string) error {
 }
 
 func (v *Vault) Unlock(ctx context.Context, password string) error {
-	salt, dek, nonce, err := v.store.Config.Get(ctx)
+	username, salt, dek, nonce, err := v.store.Config.Get(ctx)
 	if err != nil {
 		return err
 	}
@@ -76,8 +77,46 @@ func (v *Vault) Unlock(ctx context.Context, password string) error {
 	}
 
 	v.dek = []byte(decryptedDek)
+	v.username = username
 
 	return nil
+}
+
+func (v *Vault) List(ctx context.Context) ([]store.Password, error) {
+	passwords, err := v.store.Password.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range passwords {
+		pass := &passwords[i]
+		decrypted, _ := v.decrypt(pass.EncryptedPassword, pass.Nonce, v.dek)
+		pass.Password = decrypted
+	}
+
+	return passwords, nil
+}
+
+func (v *Vault) AddService(ctx context.Context, service string) error {
+	password, err := v.generateRadnomPassword(16)
+	if err != nil {
+		return err
+	}
+
+	encrypted, nonce, err := v.encrypt([]byte(password), v.dek)
+	if err != nil {
+		return err
+	}
+
+	if err := v.store.Password.Add(ctx, service, encrypted, nonce); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (v *Vault) Username() string {
+	return v.username
 }
 
 func (v *Vault) encrypt(plaintext, key []byte) ([]byte, []byte, error) {
@@ -122,4 +161,19 @@ func (v *Vault) decrypt(ciphertext, nonce, key []byte) (string, error) {
 
 func (v *Vault) deriveKey(password, salt []byte) []byte {
 	return argon2.IDKey(password, salt, time, memory, threads, keyLength)
+}
+
+func (v *Vault) generateRadnomPassword(n int) (string , error) {
+	letters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+	
+	password := make([]byte, n)
+	if _, err := rand.Read(password); err != nil {
+		return "", err
+	}
+
+	for i := range password {
+		password[i] = letters[int(password[i])%len(letters)]
+	}
+
+	return string(password), nil
 }

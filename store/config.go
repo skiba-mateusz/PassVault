@@ -10,10 +10,10 @@ type ConfigStore struct {
 	db *sql.DB
 }
 
-func (s *ConfigStore) Get(ctx context.Context) ([]byte, []byte, []byte, error) {
+func (s *ConfigStore) Get(ctx context.Context) (string, []byte, []byte, []byte, error) {
 	query := `
 		SELECT 
-			argon_salt, encrypted_dek, dek_nonce 
+			username, argon_salt, encrypted_dek, dek_nonce 
 		FROM vault_config 
 		LIMIT 1
 	`
@@ -22,13 +22,14 @@ func (s *ConfigStore) Get(ctx context.Context) ([]byte, []byte, []byte, error) {
 	defer cancel()
 
 	var salt, dek, nonce []byte
+	var username string
 
 	row := s.db.QueryRowContext(ctx, query)
-	if err := row.Scan(&salt, &dek, &nonce); err != nil {
-		return nil, nil, nil, err
+	if err := row.Scan(&username, &salt, &dek, &nonce); err != nil {
+		return "", nil, nil, nil, err
 	}
 
-	return salt, dek, nonce, nil
+	return username, salt, dek, nonce, nil
 }
 
 func (s *ConfigStore) Save(ctx context.Context, username string, salt, dek, nonce []byte) (error) {

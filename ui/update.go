@@ -3,13 +3,17 @@ package ui
 import (
 	"fmt"
 
+	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type FailedMsg struct {Err error}
+type FailedMsg struct { Err error }
 
-type RegisterSuccessMsg struct {}
-type LoginSuccessMsg struct {}
+type RegisterSuccessMsg struct { Username string }
+type LoginSuccessMsg struct { Username string }
+type DashboardSuccessmsg struct { Passwords []table.Row }
+type AddServiceSuccessMsg struct { }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -25,8 +29,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case LoginSuccessMsg:
 		m.view = dashboardView
+		m.username = msg.Username
 		return m, nil
 	case RegisterSuccessMsg:
+		m.view = dashboardView
+		m.username = msg.Username
+		return m, nil
+	case DashboardSuccessmsg:
+		rows := msg.Passwords
+		m.table.SetRows(rows)
+		return m, nil
+	case AddServiceSuccessMsg:
 		m.view = dashboardView
 		return m, nil
 	}
@@ -38,6 +51,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.loginUpdate(msg)
 	case dashboardView:
 		return m.dashboardUpdate(msg)
+	case addServiceView:
+		return m.addServiceUpdate(msg)
 	}
 
 	return m, nil
@@ -105,7 +120,37 @@ func (m Model) loginUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd}
 
 func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return m, nil
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyEnter {
+			pass := m.table.SelectedRow()[2]
+			clipboard.WriteAll(pass)
+			m.message = fmt.Sprintf("%s copied to clipboard", pass)
+			return m, nil
+		} else if msg.Type == tea.KeyCtrlN {
+			m.view = addServiceView
+			return m, nil
+		}
+	}
+
+	m.table, _ = m.table.Update(msg)
+
+	return m, m.dashboard()
+}
+
+func (m Model) addServiceUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyEnter {
+			service := m.editor.Value()
+			return m, m.addService(service)
+		}
+	}
+
+	var cmd tea.Cmd
+	m.editor, cmd = m.editor.Update(msg)
+
+	return m, cmd
 }
 
 func (m Model) login(password string) (tea.Cmd) {
@@ -113,7 +158,7 @@ func (m Model) login(password string) (tea.Cmd) {
 		if err := m.vault.Unlock(m.ctx, password); err != nil {
 			return FailedMsg{Err: fmt.Errorf("Incorrect password")}
 		}
-		return LoginSuccessMsg{}
+		return LoginSuccessMsg{ Username: m.vault.Username() }
 	}
 }
 
@@ -122,7 +167,37 @@ func (m Model) register(username, password string) (tea.Cmd) {
 		if err := m.vault.Setup(m.ctx, username, password); err != nil {
 			return FailedMsg{Err: err}
 		}
-		return RegisterSuccessMsg{}
+		return RegisterSuccessMsg{ Username: m.vault.Username()}
+	}
+}
+
+func (m Model) dashboard() (tea.Cmd) {
+	return func() tea.Msg {
+		passwords ,err := m.vault.List(m.ctx)
+		if err != nil {
+			return FailedMsg{Err: err}
+		}
+
+		rowPasswords := []table.Row{}
+		for i, pass := range passwords {
+			row := []string{
+				fmt.Sprintf("%d", i),
+				pass.Service,
+				pass.Password,
+			}
+			rowPasswords = append(rowPasswords, row)
+		}
+
+		return DashboardSuccessmsg{Passwords: rowPasswords}
+	}
+}
+
+func (m Model) addService(service string) tea.Cmd {
+	return func() tea.Msg {
+		if err := m.vault.AddService(m.ctx, service); err != nil{
+			return FailedMsg{Err: err}
+		}
+		return AddServiceSuccessMsg{}
 	}
 }
 
