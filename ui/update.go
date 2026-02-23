@@ -143,6 +143,7 @@ func (m Model) addServiceUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEnter {
 			service := m.editor.Value()
+			m.editor.Reset()
 			return m, m.addService(service)
 		}
 	}
