@@ -44,7 +44,7 @@ func NewModel(ctx context.Context, vault *vault.Vault) Model {
 		table.WithColumns(columns),
 		table.WithRows([]table.Row{}),
 		table.WithFocused(true),
-		table.WithHeight(7),
+		table.WithHeight(0),
 	)
 
 	var formInput textinput.Model

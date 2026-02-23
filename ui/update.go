@@ -37,9 +37,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case DashboardSuccessmsg:
 		rows := msg.Passwords
+		m.table.SetHeight(len(rows) + 1)
 		m.table.SetRows(rows)
 		return m, nil
 	case AddServiceSuccessMsg:
+		m.table.SetHeight(m.table.Height() + 1)
 		m.view = dashboardView
 		return m, nil
 	}
