@@ -27,7 +27,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEsc {
 			return m, tea.Quit
-		}
+		}	
+
+		m.resetStatus()
 	}
 
 	switch msg := msg.(type) {
@@ -85,7 +87,6 @@ func (m Model) registerUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if keyType == tea.KeyEnter && m.formIndex == len(m.form) - 1 {
 				username := m.form[0].Value()
 				password := m.form[1].Value()
-				m.err = nil
 				return m, m.register(username, password)
 			}
 
@@ -111,7 +112,6 @@ func (m Model) registerUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.form[i].Blur()
 			}
 
-			m.err = nil
 			return m, tea.Batch(cmds...)
 		}
 	}
@@ -127,7 +127,6 @@ func (m Model) loginUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Type == tea.KeyEnter {
 			password := m.loginInput.Value()
 			m.loginInput.Reset()
-			m.err = nil
 			return m, m.login(password)
 		}
 	}
@@ -153,8 +152,6 @@ func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.message = fmt.Sprintf("%s copied to clipboard", pass)
 			return m, nil
 		} else if msg.Type == tea.KeyCtrlN {
-			m.message = ""
-			m.err = nil
 			m.view = addServiceView
 			return m, textinput.Blink
 		}
@@ -179,11 +176,9 @@ func (m Model) addServiceUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = fmt.Errorf("Service name cannot be empty")
 				return m, nil
 			}
-			m.err = nil
 			m.editor.Reset()
 			return m, m.addService(service)
 		} else if msg.Type == tea.KeyBackspace {
-			m.err = nil
 			m.view = dashboardView
 			return m, nil
 		}
@@ -245,6 +240,11 @@ func (m Model) addService(service string) tea.Cmd {
 		}
 		return AddServiceSuccessMsg{}
 	}
+}
+
+func (m *Model) resetStatus() {
+	m.err = nil
+	m.message = ""	
 }
 
 func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
