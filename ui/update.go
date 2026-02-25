@@ -92,6 +92,10 @@ func (m Model) registerUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if keyType == tea.KeyEnter && m.formIndex == len(m.form) - 1 {
 				username := m.form[0].Value()
 				password := m.form[1].Value()
+				if username == "" || password == "" {
+					m.err = fmt.Errorf("Username and password cannot be empty")
+					return m, nil
+				}
 				return m, m.register(username, password)
 			}
 
