@@ -156,7 +156,7 @@ func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			pass := m.table.SelectedRow()[2]
+			pass := m.table.SelectedRow()[3]
 			clipboard.WriteAll(pass)
 			m.message = fmt.Sprintf("%s copied to clipboard", pass)
 			return m, nil
