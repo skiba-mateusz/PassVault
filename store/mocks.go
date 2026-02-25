@@ -7,9 +7,16 @@ type MockConfigStore struct {
 	username string
 }
 
+type MockPasswordStore struct {
+	passwords []Password
+}
+
 func NewMockStore() *Store {
 	return &Store{
 		Config: &MockConfigStore{},
+		Password: &MockPasswordStore{
+			passwords: []Password{},
+		},
 	}
 }
 
@@ -19,5 +26,18 @@ func (s *MockConfigStore) Get(ctx context.Context) (string, []byte, []byte, []by
 
 func (s *MockConfigStore) Save(ctx context.Context, username string, salt, dek, nonce []byte) error {
 	s.salt, s.dek, s.nonce, s.username = salt, dek, nonce, username
+	return nil
+}
+
+func (s *MockPasswordStore) List(ctx context.Context) ([]Password, error) {
+	return s.passwords, nil
+}
+
+func (s *MockPasswordStore) Add(ctx context.Context, service string, password, nonce []byte) error {
+	s.passwords = append(s.passwords, Password{
+		Service: service,
+		EncryptedPassword: password,
+		Nonce: nonce,
+	})
 	return nil
 }
