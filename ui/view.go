@@ -56,6 +56,7 @@ func (m Model) View() string {
 		footer += " | ctrl+n - add service"
 	case addServiceView:
 		result += m.addServiceView()
+		footer += " | backspace - back"
 	}
 
 	if m.err != nil {
