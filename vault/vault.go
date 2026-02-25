@@ -59,6 +59,7 @@ func (v *Vault) Setup(ctx context.Context, username, password string) error {
 	}
 
 	v.dek = []byte(dek)
+	v.username = username
 
 	return nil
 }
