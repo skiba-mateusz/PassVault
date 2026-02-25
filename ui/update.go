@@ -14,7 +14,7 @@ type FailedMsg struct { Err error }
 
 type RegisterSuccessMsg struct { Username string }
 type LoginSuccessMsg struct { Username string }
-type DashboardSuccessmsg struct { Passwords []table.Row }
+type DashboardSuccessMsg struct { Passwords []table.Row }
 type AddServiceSuccessMsg struct { }
 type DeleteServiceSuccessMsg struct { }
 
@@ -42,7 +42,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.moveToDashboard()
 	case RegisterSuccessMsg:
 		return m.moveToDashboard()
-	case DashboardSuccessmsg:
+	case DashboardSuccessMsg:
 		rows := msg.Passwords
 		m.table.SetRows(rows)
 		
@@ -237,7 +237,7 @@ func (m Model) dashboard() (tea.Cmd) {
 			rowPasswords = append(rowPasswords, row)
 		}
 
-		return DashboardSuccessmsg{Passwords: rowPasswords}
+		return DashboardSuccessMsg{Passwords: rowPasswords}
 	}
 }
 
