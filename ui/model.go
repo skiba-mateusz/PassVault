@@ -29,13 +29,11 @@ type Model struct {
 func NewModel(ctx context.Context, vault *vault.Vault) Model {
 	loginInput := textinput.New()
 	loginInput.Placeholder = "Password"
-	loginInput.Focus()
 	loginInput.EchoMode = textinput.EchoPassword
 	loginInput.EchoCharacter = '*'
 
 	editor := textinput.New()
 	editor.Placeholder = "Service"
-	editor.Focus()
 
 	columns := []table.Column{
 		{ Title: "ID", Width: 0 },
@@ -47,7 +45,6 @@ func NewModel(ctx context.Context, vault *vault.Vault) Model {
 	table := table.New(
 		table.WithColumns(columns),
 		table.WithRows([]table.Row{}),
-		table.WithFocused(true),
 		table.WithHeight(0),
 	)
 
@@ -62,7 +59,6 @@ func NewModel(ctx context.Context, vault *vault.Vault) Model {
 		switch i {
 		case 0:
 			formInput.Placeholder = "Username"
-			formInput.Focus()
 		case 1:
 			formInput.Placeholder = "Password"
 			formInput.EchoMode = textinput.EchoPassword
@@ -76,6 +72,9 @@ func NewModel(ctx context.Context, vault *vault.Vault) Model {
 
 	if vault.IsSetup(ctx) {
 		currentView = loginView
+		loginInput.Focus()
+	} else {
+		form[0].Focus()
 	}
 
 	return Model{

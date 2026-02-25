@@ -86,6 +86,11 @@ func (m Model) loginView() string {
 
 func (m Model) dashboardView() string {
 	m.table.SetStyles(tableStyles)
+
+	if len(m.table.Rows()) == 0 {
+		return fmt.Sprintf("%s\n%s", m.message, "No services found, try adding one")
+	}
+
 	return fmt.Sprintf("%s\n\n%s", m.message, m.table.View())
 }
 

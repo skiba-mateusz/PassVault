@@ -7,7 +7,6 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -40,29 +39,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.isLoading = false
 		return m, nil
 	case LoginSuccessMsg:
-		m.view = dashboardView
-		m.username = msg.Username
-		m.isLoading = true
-		return m, m.dashboard()
+		return m.moveToDashboard()
 	case RegisterSuccessMsg:
-		m.view = dashboardView
-		m.username = msg.Username
-		m.isLoading = true
-		return m, m.dashboard()
+		return m.moveToDashboard()
 	case DashboardSuccessmsg:
 		rows := msg.Passwords
-		m.table.SetHeight(len(rows) + 1)
 		m.table.SetRows(rows)
+		
+		height := len(rows) + 1
+		if height < 3 {
+			height = 3
+		}
+		m.table.SetHeight(height)
+        m.table.SetCursor(0)
+		
 		m.isLoading = false
+		m.table.Focus()
 		return m, nil
 	case AddServiceSuccessMsg:
-		m.view = dashboardView
-		m.isLoading	= true
-		return m, m.dashboard()
+		return m.moveToDashboard()
 	case DeleteServiceSuccessMsg:
-		m.view = dashboardView
-		m.isLoading = true
-		return m, m.dashboard()
+		return m.moveToDashboard()
 	}
 
 	if m.isLoading {
@@ -147,6 +144,7 @@ func (m Model) loginUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	hasRows := len(m.table.Rows()) > 0
 
 	switch msg := msg.(type) {
@@ -162,7 +160,7 @@ func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		} else if msg.Type == tea.KeyCtrlN {
 			m.view = addServiceView
-			return m, textinput.Blink
+			return m, m.editor.Focus()
 		} else if msg.Type == tea.KeyCtrlX {
 			idStr := m.table.SelectedRow()[0]
 			id, _ := strconv.Atoi(idStr)
@@ -174,9 +172,8 @@ func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	var cmd tea.Cmd
 	m.table, cmd = m.table.Update(msg)
-	
+
 	return m, cmd
 }
 
@@ -229,10 +226,6 @@ func (m Model) dashboard() (tea.Cmd) {
 			return FailedMsg{Err: err}
 		}
 
-		if len(passwords) == 0 {
-			return FailedMsg{Err: fmt.Errorf("Nothing to display, try adding service")}
-		}
-
 		rowPasswords := []table.Row{}
 		for i, pass := range passwords {
 			row := []string{
@@ -264,6 +257,13 @@ func (m Model) deleteService(id int64) tea.Cmd {
 		}
 		return DeleteServiceSuccessMsg{}
 	}
+}
+
+func (m Model) moveToDashboard() (tea.Model, tea.Cmd) {
+	m.view = dashboardView
+	m.isLoading = true
+	m.table.Focus()
+	return m, m.dashboard()
 }
 
 func (m *Model) resetStatus() {
