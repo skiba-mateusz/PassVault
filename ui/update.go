@@ -37,10 +37,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case FailedMsg:
 		m.err = msg.Err
 		m.isLoading = false
-		return m, nil
+		return m, nil	
 	case LoginSuccessMsg:
+		m.username = msg.Username
 		return m.moveToDashboard()
 	case RegisterSuccessMsg:
+		m.username = msg.Username
 		return m.moveToDashboard()
 	case DashboardSuccessMsg:
 		rows := msg.Passwords

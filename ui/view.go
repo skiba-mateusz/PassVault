@@ -18,7 +18,26 @@ const (
 )
 
 var (
-	headerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("203"))
+    headerStyle = lipgloss.NewStyle().
+        Background(lipgloss.Color("235")).
+        Foreground(lipgloss.Color("230")).
+        Bold(true).
+        PaddingLeft(1).
+        PaddingRight(1)
+
+    errorStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("196")).
+        Bold(true)
+
+    messageStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("49"))
+
+    footerStyle = lipgloss.NewStyle().
+        Background(lipgloss.Color("235")).
+        Foreground(lipgloss.Color("230")).
+        PaddingLeft(1).
+        PaddingRight(1).
+		Bold(true)
 )
 
 var tableStyles = func() table.Styles {
@@ -28,42 +47,58 @@ var tableStyles = func() table.Styles {
         BorderStyle(lipgloss.NormalBorder()).
         BorderForeground(lipgloss.Color("240")).
         BorderBottom(true).
-        Bold(false)
+        Foreground(lipgloss.Color("230")).
+        Bold(true)
 
     s.Selected = s.Selected.
-        Foreground(lipgloss.Color("229")).
-        Background(lipgloss.Color("57")).
-        Bold(false)
+        Foreground(lipgloss.Color("193")).
+		Bold(true)
 
     return s
 }()
 
 func (m Model) View() string {
-	result := fmt.Sprintf("%s\n\n", headerStyle.Render(fmt.Sprintf("PassVault - Your Personal Password Manager | %s", m.username)))
-	footer := "esc - quit"
+    header := headerStyle.Render("PassVault - Your Personal Password Manager")
 
-	if m.isLoading {
-		return fmt.Sprintf("%s%s loading...\n\n%s",result, m.loader.View(), footer)
+	if m.username != "" {
+    	header = headerStyle.Render(fmt.Sprintf("PassVault - Your Personal Password Manager | welcome, %s", m.username))
 	}
 
-	switch m.view {
-	case registerView:
-		result += m.registerView()
-	case loginView:
-		result += m.loginView()
-	case dashboardView:
-		result += m.dashboardView()
-		footer += " | ctrl+n - add service | ctrl+x - delete service"
-	case addServiceView:
-		result += m.addServiceView()
-		footer += " | backspace - back"
-	}
+    var body string
+    footer := "Esc - quit"
 
-	if m.err != nil {
-		result += fmt.Sprintf("\n\n%s", m.err)
+	if m.message != "" {
+		body += messageStyle.Render(m.message) + "\n\n"
 	}
+    
+    if m.isLoading {
+        body += m.loader.View() + " Loading..."
+    } else {
+        switch m.view {
+        case registerView:
+            body += m.registerView()
+        case loginView:
+            body += m.loginView()
+        case dashboardView:
+            body += m.dashboardView()
+            footer += " | Ctrl+N - add | Ctrl+X - del"
+        case addServiceView:
+            body += m.addServiceView()
+            footer += " | Backspace - back"
+        }
+    }
 
-	return fmt.Sprintf("%s\n\n%s", result, footer)
+    if m.err != nil {
+        body += "\n\n" + errorStyle.Render(m.err.Error())
+    }
+
+    return lipgloss.JoinVertical(lipgloss.Left,
+        header,
+        "",
+        body,
+        "",
+        footerStyle.Render(footer),
+    )
 }
 
 func (m Model) registerView() string {
@@ -85,13 +120,13 @@ func (m Model) loginView() string {
 }
 
 func (m Model) dashboardView() string {
-	m.table.SetStyles(tableStyles)
+	m.table.SetStyles(tableStyles)	
 
 	if len(m.table.Rows()) == 0 {
-		return fmt.Sprintf("%s\n%s", m.message, "No services found, try adding one")
+		return "No services found, try adding one"
 	}
 
-	return fmt.Sprintf("%s\n\n%s", m.message, m.table.View())
+	return m.table.View()
 }
 
 func (m Model) addServiceView() string {
