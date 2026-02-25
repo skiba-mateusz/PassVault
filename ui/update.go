@@ -179,8 +179,9 @@ func (m Model) addServiceUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.editor.Reset()
 			return m, m.addService(service)
 		} else if msg.Type == tea.KeyBackspace {
-			m.view = dashboardView
-			return m, nil
+			if len(m.editor.Value()) <= 0 {
+				m.view = dashboardView
+			}
 		}
 	}
 
