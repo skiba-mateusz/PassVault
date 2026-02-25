@@ -41,3 +41,7 @@ func (s *MockPasswordStore) Add(ctx context.Context, service string, password, n
 	})
 	return nil
 }
+
+func (s *MockPasswordStore) Delete(ctx context.Context, id int64) error {
+	return nil
+}

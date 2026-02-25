@@ -53,7 +53,7 @@ func (m Model) View() string {
 		result += m.loginView()
 	case dashboardView:
 		result += m.dashboardView()
-		footer += " | ctrl+n - add service"
+		footer += " | ctrl+n - add service | ctrl+x - delete service"
 	case addServiceView:
 		result += m.addServiceView()
 		footer += " | backspace - back"

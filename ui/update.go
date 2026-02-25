@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -16,6 +17,7 @@ type RegisterSuccessMsg struct { Username string }
 type LoginSuccessMsg struct { Username string }
 type DashboardSuccessmsg struct { Passwords []table.Row }
 type AddServiceSuccessMsg struct { }
+type DeleteServiceSuccessMsg struct { }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -54,9 +56,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.isLoading = false
 		return m, nil
 	case AddServiceSuccessMsg:
-		m.table.SetHeight(m.table.Height() + 1)
 		m.view = dashboardView
 		m.isLoading	= true
+		return m, m.dashboard()
+	case DeleteServiceSuccessMsg:
+		m.view = dashboardView
+		m.isLoading = true
 		return m, m.dashboard()
 	}
 
@@ -154,6 +159,10 @@ func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if msg.Type == tea.KeyCtrlN {
 			m.view = addServiceView
 			return m, textinput.Blink
+		} else if msg.Type == tea.KeyCtrlX {
+			idStr := m.table.SelectedRow()[0]
+			id, _ := strconv.Atoi(idStr)
+			return m, m.deleteService(int64(id))
 		}
 
 		if !hasRows && (msg.Type == tea.KeyUp || msg.Type == tea.KeyDown) {
@@ -223,6 +232,7 @@ func (m Model) dashboard() (tea.Cmd) {
 		rowPasswords := []table.Row{}
 		for i, pass := range passwords {
 			row := []string{
+				fmt.Sprintf("%d", pass.ID),
 				fmt.Sprintf("%d", i + 1),
 				pass.Service,
 				pass.Password,
@@ -240,6 +250,15 @@ func (m Model) addService(service string) tea.Cmd {
 			return FailedMsg{Err: err}
 		}
 		return AddServiceSuccessMsg{}
+	}
+}
+
+func (m Model) deleteService(id int64) tea.Cmd {
+	return func() tea.Msg {
+		if err := m.vault.DeleteService(m.ctx, id); err != nil {
+			return FailedMsg{Err: err}
+		}
+		return DeleteServiceSuccessMsg{}
 	}
 }
 

@@ -115,6 +115,10 @@ func (v *Vault) AddService(ctx context.Context, service string) error {
 	return nil
 }
 
+func (v *Vault) DeleteService(ctx context.Context, id int64) error {
+	return v.store.Password.Delete(ctx, id)
+}
+
 func (v *Vault) Username() string {
 	return v.username
 }

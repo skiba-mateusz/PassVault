@@ -38,6 +38,7 @@ func NewModel(ctx context.Context, vault *vault.Vault) Model {
 	editor.Focus()
 
 	columns := []table.Column{
+		{ Title: "ID", Width: 0 },
 		{ Title: "#", Width: 4 },
 		{ Title: "Service", Width: 16 },
 		{ Title: "Password", Width: 32 },

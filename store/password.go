@@ -6,6 +6,7 @@ import (
 )
 
 type Password struct {
+	ID                  int64
 	Service           	string
 	EncryptedPassword 	[]byte
 	Nonce 				[]byte
@@ -19,7 +20,7 @@ type PasswordStore struct {
 func (s *PasswordStore) List(ctx context.Context) ([]Password, error) {
 	query := `
 		SELECT 
-			service, encrypted_password, password_nonce
+			id, service, encrypted_password, password_nonce
 		FROM passwords
 	`
 
@@ -31,7 +32,7 @@ func (s *PasswordStore) List(ctx context.Context) ([]Password, error) {
 
 	for rows.Next() {
 		var password Password
-		if err := rows.Scan(&password.Service, &password.EncryptedPassword, &password.Nonce); err != nil {
+		if err := rows.Scan(&password.ID, &password.Service, &password.EncryptedPassword, &password.Nonce); err != nil {
 			return nil, err
 		}
 		passwords = append(passwords, password)
@@ -51,6 +52,19 @@ func (s *PasswordStore) Add(ctx context.Context, service string, password, nonce
 	`
 
 	if _, err := s.db.ExecContext(ctx, query, service, password, nonce); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *PasswordStore) Delete(ctx context.Context, id int64) error {
+	query := `
+		DELETE FROM passwords
+		WHERE id = ?
+	`
+
+	if _, err := s.db.ExecContext(ctx, query, id); err != nil {
 		return err
 	}
 
