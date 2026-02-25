@@ -44,6 +44,21 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+      - "^chore"
+      - "Merge branch"
+      - "Initial commit"
+  groups:
+    - title: "🚀 Features"
+      regexp: '^feat(\(.*\))??:'
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: '^fix(\(.*\))??:'
+      order: 1
+    - title: "🚜 Refactorings"
+      regexp: '^refactor(\(.*\))??:'
+      order: 2
+    - title: "Others"
+      order: 999
 
 release:
   footer: >-
