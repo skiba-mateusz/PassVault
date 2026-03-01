@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 type Password struct {
@@ -23,6 +24,9 @@ func (s *PasswordStore) List(ctx context.Context) ([]Password, error) {
 			id, service, encrypted_password, password_nonce
 		FROM passwords
 	`
+
+	ctx, cancel := context.WithTimeout(ctx, 15 * time.Second)
+	defer cancel()
 
 	var passwords []Password
 	rows, err := s.db.QueryContext(ctx, query)
@@ -51,6 +55,9 @@ func (s *PasswordStore) Add(ctx context.Context, service string, password, nonce
 		VALUES(?, ?, ?)
 	`
 
+	ctx, cancel := context.WithTimeout(ctx, 15 * time.Second)
+	defer cancel()
+
 	if _, err := s.db.ExecContext(ctx, query, service, password, nonce); err != nil {
 		return err
 	}
@@ -63,6 +70,9 @@ func (s *PasswordStore) Delete(ctx context.Context, id int64) error {
 		DELETE FROM passwords
 		WHERE id = ?
 	`
+
+	ctx, cancel := context.WithTimeout(ctx, 15 * time.Second)
+	defer cancel()
 
 	if _, err := s.db.ExecContext(ctx, query, id); err != nil {
 		return err
@@ -77,6 +87,9 @@ func (s *PasswordStore) Edit(ctx context.Context, id int64, newService string) e
 		SET service = ?
 		WHERE id = ?
 	`
+
+	ctx, cancel := context.WithTimeout(ctx, 15 * time.Second)
+	defer cancel()
 
 	if _, err := s.db.ExecContext(ctx, query, newService, id); err != nil {
 		return err
