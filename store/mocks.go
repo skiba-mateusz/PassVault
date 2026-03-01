@@ -1,6 +1,9 @@
 package store
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 type MockConfigStore struct {
 	salt, dek, nonce []byte
@@ -9,6 +12,7 @@ type MockConfigStore struct {
 
 type MockPasswordStore struct {
 	passwords []Password
+	id int64
 }
 
 func NewMockStore() *Store {
@@ -30,22 +34,42 @@ func (s *MockConfigStore) Save(ctx context.Context, username string, salt, dek, 
 }
 
 func (s *MockPasswordStore) List(ctx context.Context) ([]Password, error) {
+	if len(s.passwords) == 0 {
+		return nil, fmt.Errorf("No passwords")
+	}
+
 	return s.passwords, nil
 }
 
 func (s *MockPasswordStore) Add(ctx context.Context, service string, password, nonce []byte) error {
 	s.passwords = append(s.passwords, Password{
+		ID: s.id,
 		Service: service,
 		EncryptedPassword: password,
 		Nonce: nonce,
 	})
+	s.id++
 	return nil
 }
 
 func (s *MockPasswordStore) Delete(ctx context.Context, id int64) error {
+	for idx, pass := range s.passwords {
+		if pass.ID == id {
+			s.passwords = append(s.passwords[:idx], s.passwords[idx+1:]...)
+			return nil
+		}
+	}
+
 	return nil
 }
 
 func (s *MockPasswordStore) Edit(ctx context.Context, id int64, newService string) error {
+	for idx, pass := range s.passwords {
+		if pass.ID == id {
+			s.passwords[idx].Service = newService
+			return nil
+		}
+	}
+	
 	return nil
 }

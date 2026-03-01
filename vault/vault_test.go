@@ -46,7 +46,7 @@ func TestUnlockVault(t *testing.T) {
 	}
 }
 
-func TestAddService(t *testing.T) {
+func TestServiceCRUD(t *testing.T) {
 	store := store.NewMockStore()
 	vault := NewVault(store)
 
@@ -88,4 +88,33 @@ func TestAddService(t *testing.T) {
 			t.Fatalf("Service %s has empty nonce", svc)
 		}
 	}
+
+	for _, pass := range passwords {
+		if err := vault.EditService(ctx, pass.ID, pass.Service + "-edited"); err != nil {
+			t.Fatalf("Edit service failed: %v", err)
+		}
+	}
+
+	editedPasswords, err := vault.List(ctx)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+
+	for i, svc := range services {
+		expected := svc + "-edited"
+		if editedPasswords[i].Service != expected {
+			t.Fatalf("Expected %s, got %s", expected, editedPasswords[i].Service)
+		}
+	}
+
+	for _, pass := range passwords {
+		if err := vault.DeleteService(ctx, pass.ID); err != nil {
+			t.Fatalf("Delete service failed: %v", err)
+		}
+	}
+
+	_, err = vault.List(ctx)
+	if err == nil {
+		t.Fatalf("Expected error due to lack of services %v", err)
+	} 
 }
