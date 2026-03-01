@@ -14,6 +14,7 @@ type Store struct {
 		List(ctx context.Context) ([]Password, error)
 		Add(ctx context.Context, service string, password, nonce []byte) error
 		Delete(ctx context.Context, id int64) error
+		Edit(ctx context.Context, id int64, newService string) error
 	}
 }
 

@@ -120,6 +120,10 @@ func (v *Vault) DeleteService(ctx context.Context, id int64) error {
 	return v.store.Password.Delete(ctx, id)
 }
 
+func (v *Vault) EditService(ctx context.Context, id int64, newService string) error {
+	return v.store.Password.Edit(ctx, id, newService)
+}
+
 func (v *Vault) Username() string {
 	return v.username
 }

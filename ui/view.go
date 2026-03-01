@@ -15,6 +15,7 @@ const (
 	loginView
 	dashboardView
 	addServiceView
+    editServiceView
 )
 
 var (
@@ -81,9 +82,12 @@ func (m Model) View() string {
             body += m.loginView()
         case dashboardView:
             body += m.dashboardView()
-            footer += " | Ctrl+N - add | Ctrl+X - del"
+            footer += " | Ctrl+N - add | Ctrl+X - del | Ctrl+E - edit"
         case addServiceView:
             body += m.addServiceView()
+            footer += " | Backspace - back"
+        case editServiceView:
+            body += m.editServiceView()
             footer += " | Backspace - back"
         }
     }
@@ -131,4 +135,8 @@ func (m Model) dashboardView() string {
 
 func (m Model) addServiceView() string {
 	return fmt.Sprintf("Add service\n%s", m.editor.View())
+}
+
+func (m Model) editServiceView() string {
+	return fmt.Sprintf("Edit service\n%s", m.editor.View())
 }

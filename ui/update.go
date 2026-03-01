@@ -17,6 +17,7 @@ type LoginSuccessMsg struct { Username string }
 type DashboardSuccessMsg struct { Passwords []table.Row }
 type AddServiceSuccessMsg struct { }
 type DeleteServiceSuccessMsg struct { }
+type EditServiceSuccessMsg struct { }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -62,6 +63,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.moveToDashboard()
 	case DeleteServiceSuccessMsg:
 		return m.moveToDashboard()
+	case EditServiceSuccessMsg:
+		return m.moveToDashboard()
 	}
 
 	if m.isLoading {
@@ -77,6 +80,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.dashboardUpdate(msg)
 	case addServiceView:
 		return m.addServiceUpdate(msg)
+	case editServiceView:
+		return m.editServiceUpdate(msg)
 	}
 
 	return m, nil
@@ -151,27 +156,26 @@ func (m Model) dashboardUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.Type == tea.KeyEnter {
-			if !hasRows {
+		if hasRows {
+			if msg.Type == tea.KeyEnter {
+				pass := m.table.SelectedRow()[3]
+				clipboard.WriteAll(pass)
+				m.message = fmt.Sprintf("%s copied to clipboard", pass)
 				return m, nil
+			} else if msg.Type == tea.KeyCtrlX {
+				idStr := m.table.SelectedRow()[0]
+				id, _ := strconv.Atoi(idStr)
+				return m, m.deleteService(int64(id))
+			} else if msg.Type == tea.KeyCtrlE {
+				m.view = editServiceView
+				m.editor.SetValue(m.table.SelectedRow()[2])
+				return m, m.editor.Focus()
 			}
-
-			pass := m.table.SelectedRow()[3]
-			clipboard.WriteAll(pass)
-			m.message = fmt.Sprintf("%s copied to clipboard", pass)
-			return m, nil
-		} else if msg.Type == tea.KeyCtrlN {
+		}
+		if msg.Type == tea.KeyCtrlN {
 			m.view = addServiceView
 			return m, m.editor.Focus()
-		} else if msg.Type == tea.KeyCtrlX {
-			idStr := m.table.SelectedRow()[0]
-			id, _ := strconv.Atoi(idStr)
-			return m, m.deleteService(int64(id))
-		}
-
-		if !hasRows && (msg.Type == tea.KeyUp || msg.Type == tea.KeyDown) {
-			return m, nil
-		}
+		} 
 	}
 
 	m.table, cmd = m.table.Update(msg)
@@ -190,6 +194,33 @@ func (m Model) addServiceUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.editor.Reset()
 			return m, m.addService(service)
+		} else if msg.Type == tea.KeyBackspace {
+			if len(m.editor.Value()) <= 0 {
+				m.view = dashboardView
+			}
+		}
+	}
+
+	var cmd tea.Cmd
+	m.editor, cmd = m.editor.Update(msg)
+
+	return m, cmd
+}
+
+func (m Model) editServiceUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyEnter {
+			service := m.editor.Value()
+			if service == "" {
+				m.err = fmt.Errorf("Service name cannot be empty")
+				return m, nil
+			}
+
+			idStr := m.table.SelectedRow()[0]
+			id, _ := strconv.Atoi(idStr)
+			m.editor.Reset()
+			return m, m.editService(int64(id), service)
 		} else if msg.Type == tea.KeyBackspace {
 			if len(m.editor.Value()) <= 0 {
 				m.view = dashboardView
@@ -258,6 +289,15 @@ func (m Model) deleteService(id int64) tea.Cmd {
 			return FailedMsg{Err: err}
 		}
 		return DeleteServiceSuccessMsg{}
+	}
+}
+
+func (m Model) editService(id int64, newService string) tea.Cmd {
+	return func() tea.Msg {
+		if err := m.vault.EditService(m.ctx, id, newService); err != nil {
+			return FailedMsg{Err: err}
+		}
+		return EditServiceSuccessMsg{}
 	}
 }
 

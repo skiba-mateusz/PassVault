@@ -70,3 +70,17 @@ func (s *PasswordStore) Delete(ctx context.Context, id int64) error {
 
 	return nil
 }
+
+func (s *PasswordStore) Edit(ctx context.Context, id int64, newService string) error {
+	query := `
+		UPDATE passwords
+		SET service = ?
+		WHERE id = ?
+	`
+
+	if _, err := s.db.ExecContext(ctx, query, newService, id); err != nil {
+		return err
+	}
+
+	return nil
+}
